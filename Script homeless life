@@ -1,0 +1,137 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "Homeless Life | Rayfield Edition",
+   LoadingTitle = "by fan_hiding4680vn",
+   LoadingSubtitle = "Vui lòng chờ...",
+   ConfigurationSaving = {
+      Enabled = false
+   },
+   Discord = {
+      Enabled = false
+   },
+   KeySystem = false
+})
+
+local MainTab = Window:CreateTab("Chính", "home")
+
+-- Biến lưu trữ giá trị
+local HitboxSize = 1
+local TargetPlayer = ""
+_G.HitboxEnabled = false
+
+-- --- PHẦN TỐC ĐỘ (SPEED) ---
+MainTab:CreateSection("Di Chuyển")
+
+MainTab:CreateSlider({
+   Name = "Tốc độ di chuyển",
+   Info = "Kéo để thay đổi tốc độ nhân vật",
+   Range = {16, 200},
+   Increment = 1,
+   Suffix = "Speed",
+   CurrentValue = 16,
+   Flag = "WalkSpeedSlider",
+   Callback = function(Value)
+      if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
+         game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+      end
+   end,
+})
+
+-- --- PHẦN HITBOX ---
+MainTab:CreateSection("Hitbox")
+
+MainTab:CreateSlider({
+   Name = "Kích thước Hitbox",
+   Info = "Mở rộng tầm đánh (1 - 29)",
+   Range = {1, 29},
+   Increment = 1,
+   Suffix = "Size",
+   CurrentValue = 1,
+   Flag = "HitboxSlider",
+   Callback = function(Value)
+      HitboxSize = Value
+   end,
+})
+
+MainTab:CreateToggle({
+   Name = "Bật Hitbox",
+   CurrentValue = false,
+   Flag = "HitboxToggle",
+   Callback = function(Value)
+      _G.HitboxEnabled = Value
+      if _G.HitboxEnabled then
+         task.spawn(function()
+            while _G.HitboxEnabled do
+               for _, v in pairs(game.Players:GetPlayers()) do
+                  if v ~= game.Players.LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                     v.Character.HumanoidRootPart.Size = Vector3.new(HitboxSize, HitboxSize, HitboxSize)
+                     v.Character.HumanoidRootPart.Transparency = 0.7
+                     v.Character.HumanoidRootPart.CanCollide = false
+                  end
+               end
+               task.wait(1)
+            end
+         end)
+      else
+         -- Reset khi tắt
+         for _, v in pairs(game.Players:GetPlayers()) do
+            if v ~= game.Players.LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+               v.Character.HumanoidRootPart.Size = Vector3.new(2, 2, 1)
+               v.Character.HumanoidRootPart.Transparency = 1
+            end
+         end
+      end
+   end,
+})
+
+-- --- PHẦN DỊCH CHUYỂN ---
+MainTab:CreateSection("Dịch Chuyển")
+
+MainTab:CreateInput({
+   Name = "Tên người chơi",
+   PlaceholderText = "Nhập tên...",
+   RemoveTextAfterFocusLost = false,
+   Callback = function(Text)
+      TargetPlayer = Text
+   end,
+})
+
+MainTab:CreateButton({
+   Name = "Lên đầu người này",
+   Callback = function()
+      local p1 = game.Players.LocalPlayer.Character
+      local p2 = nil
+      
+      for _, v in pairs(game.Players:GetPlayers()) do
+         if string.find(string.lower(v.Name), string.lower(TargetPlayer)) or string.find(string.lower(v.DisplayName), string.lower(TargetPlayer)) then
+            p2 = v.Character
+            break
+         end
+      end
+
+      if p1 and p2 and p2:FindFirstChild("Head") then
+         p1.HumanoidRootPart.CFrame = p2.Head.CFrame * CFrame.new(0, 5, 0)
+         Rayfield:Notify({
+            Title = "Thành công",
+            Content = "Đã dịch chuyển lên đầu " .. (p2.Name or TargetPlayer),
+            Duration = 3,
+            Image = "check",
+         })
+      else
+         Rayfield:Notify({
+            Title = "Lỗi",
+            Content = "Không tìm thấy người chơi này!",
+            Duration = 3,
+            Image = "x",
+         })
+      end
+   end,
+})
+
+Rayfield:Notify({
+   Title = "Hệ thống",
+   Content = "Script đã sẵn sàng!",
+   Duration = 5,
+   Image = "info",
+})
