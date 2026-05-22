@@ -1,0 +1,876 @@
+ local Players = game:GetService("Players")
+
+local TweenService = game:GetService("TweenService")
+
+local RunService = game:GetService("RunService")
+
+local TextService = game:GetService("TextService")
+
+local HttpService = game:GetService("HttpService")
+
+local player = Players.LocalPlayer
+
+local playerGui = player:WaitForChild("PlayerGui")
+
+local function safeDestroy(toji)
+
+	local g = playerGui:FindFirstChild(name)	if g then g:Destroy() end
+
+end
+
+safeDestroy("AutoTypingOverlay")
+
+safeDestroy("Bom2toji")
+
+local SaveFileName = "Bom2tojiNgonNgu.json"
+
+local function saveLang(tbl)
+
+	pcall(function()
+
+		if writefile then
+
+			writefile(SaveFileName, HttpService:JSONEncode(tbl))
+
+		end
+
+	end)
+
+end
+
+local function loadLang()
+
+	local data = {lang = "en"}
+
+	pcall(function()
+
+		if readfile and isfile and isfile(SaveFileName) then
+
+			local raw = readfile(SaveFileName)
+
+			local ok, dec = pcall(function() return HttpService:JSONDecode(raw) end)
+
+			if ok and type(dec) == "table" and dec.lang then
+
+				data = dec
+
+			end
+
+		end
+
+	end)
+
+	return data
+
+end
+
+local savedLang = loadLang()
+
+local currentLanguage = savedLang.lang or "en"
+
+local gui = Instance.new("ScreenGui")
+
+gui.Name = "AutoTypingOverlay"
+
+gui.IgnoreGuiInset = true
+
+gui.ResetOnSpawn = false
+
+gui.Parent = playerGui
+
+local bg = Instance.new("Frame")
+
+bg.Size = UDim2.new(1,0,1,0)
+
+bg.Position = UDim2.new(0,0,0,0)
+
+bg.BackgroundColor3 = Color3.fromRGB(0,0,0)
+
+bg.BackgroundTransparency = 0
+
+bg.BorderSizePixel = 0
+
+bg.Parent = gui
+
+local textLabel = Instance.new("TextLabel")
+
+textLabel.Size = UDim2.new(1, 0, 1, 0)
+
+textLabel.Position = UDim2.new(0, 0, 0, 0)
+
+textLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+
+textLabel.BackgroundTransparency = 0
+
+textLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+
+textLabel.Font = Enum.Font.Code
+
+textLabel.TextSize = 20
+
+textLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+textLabel.TextYAlignment = Enum.TextYAlignment.Top
+
+textLabel.TextWrapped = true
+
+textLabel.Text = ""
+
+textLabel.Parent = bg
+
+local textContents = {
+
+[[
+Bom2/lua Script Gui
+[NETWORK] Connecting to data node...
+[NETWORK] Node found: 192.168.4.12
+[NETWORK] Sending handshake request...
+[AUTH] Session key granted.
+[DOWNLOAD] Retrieving user memory package...
+[DOWNLOAD] Chunk 1/5 complete (6.2 MB)
+[DOWNLOAD] Chunk 2/5 complete (12.4 MB)
+[DOWNLOAD] Chunk 3/5 complete (18.7 MB)
+[DOWNLOAD] Chunk 4/5 complete (24.9 MB)
+[DOWNLOAD] Chunk 5/5 complete (31.1 MB)
+[CHECKSUM] Validating... OK
+[INFO] Data download complete.
+[INFO] Transferring to volatile storage...
+[INFO] Transfer finished. Ready for execution.
+[Wait] Waiting area to run data...
+[DATA] Loading data from player.
+[DATA] Loading functions...
+]],
+
+[[
+Bom2/lua Script Gui
+[DOWNLOAD] :: ██░░░░░░░░░░░░    → 14%
+[DOWNLOAD] :: ███░░░░░░░░░░░    → 27%
+[DOWNLOAD] :: ████░░░░░░░░░░    → 41%
+[DOWNLOAD] :: ██████░░░░░░░░    → 56%
+[DOWNLOAD] :: ████████░░░░░░    → 63%
+[DOWNLOAD] :: █████████░░░░░    → 71%
+[DOWNLOAD] :: ███████████░░░    → 82%
+[DOWNLOAD] :: ████████████░░    → 88%
+[DOWNLOAD] :: ████████████░░    → 89%
+[DOWNLOAD] :: ████████████░░    → 92%
+[DOWNLOAD] :: ████████████░░    → 93%
+[DOWNLOAD] :: ████████████░░    → 94%
+[DOWNLOAD] :: █████████████░    → 95%
+[DOWNLOAD] :: █████████████░    → 97%
+[DOWNLOAD] :: █████████████░    → 98%
+[DOWNLOAD] :: ██████████████    → 99%
+[DOWNLOAD] :: ██████████████    → 100%
+]],
+
+[[
+Bom2/lua Script Gui
+[LOADING]: 0101001010010101011010101010010111100101010100101010010101011010101
+101010100101010010011010101010010111100101010100101010010101011010101
+101010100101010010101011010101010010111100101010100101010010101011
+101010100101010010101011010101010111100101010100101010010101011010101
+101010100101010010101011010101010010111100101010100101010010101011010101
+101010100101010010101011010101010011100101010100101010010101011010101
+10101010010101011010101010010111100101010100101010010101011010101
+1010101001010100101010110101010100101111010100101010010101011010101
+101010100101010010101011010101010010111100101010100101010010101
+101010100101010010101011010101010010111100101010100101010010101011010101
+10101010010101001010101101010101001011110010101010010101001010101101
+1010101001010100101010110101010100101111010101010010101001010101
+101010100101010010101011010101010010111100101010100101010010110101
+1010101001010100101010110101010100011110010101010010101001010101101
+101010010101011010101010010111100101010100101010010101011010101
+0100101010010101011010101010010111100101010100101010010101011010101
+101010100101010010101011010101010010111100101010100101010010101011010
+]],
+[[
+Bom2/lua Script Gui
+[LOADING]
+0101011101001010011100101010110011010101011100101010010110101001100110
+221/991/443/20/88/11/552/331/998/441/22/991/55/203/77/889/44/22/991/553
+AF10EE2244B188AA33FA662191C301FA77BC11FE44B102219AC311EE0021F101
+10101010011010101100101101010111001010101101001010111001010100101101
+77/552/88/991/221/003/22/551/442/991/77/44/552/113/203/88/991/22/551/442
+AC39FF22EE109AC311FE8877B144D122CE0021AF10FF2233FA6621F00177BC44
+01101011100101101010100110101011100101011010100110101001101010010101
+991/77/22/889/001/113/551/442/22/77/991/552/88/44/203/442/551/22/991/77
+FA22C91122CE01FA11FE44AC77AB0021FF889A1144B101FA33FA662191C3AF10
+11010010110101101010010110101100101101011100101011010110010110101001
+203/552/88/12/991/445/113/552/22/889/003/77/221/551/442/991/22/33/552/88
+FF22EE10002144B191C301FE6621AF1088AA33FA7777BCF001AA39EE1044B177
+01010111100101011010100110101011001010110101100101111001010101011010
+8/233/99/12/77/444/991/22/55/203/552/33/88/22/991/77/003/551/442/889
+AF10AA39FF2244B111FE002191C377BC662133FA01C288AA002144B1F00111FE
+1110100110101011010010110101110010101111001011010110010111001010101
+]]
+
+}
+
+local rng = Random.new(player.UserId + math.floor(tick()))
+
+local textContent = textContents[rng:NextInteger(1,#textContents)]
+
+local chars = {}
+
+for _, cp in utf8.codes(textContent) do table.insert(chars, utf8.char(cp)) end
+
+local totalChars = #chars
+
+if totalChars == 0 then
+
+	if gui and gui.Parent then gui:Destroy() end
+
+	return
+
+end
+
+repeat task.wait() until textLabel.AbsoluteSize.X > 0 and textLabel.AbsoluteSize.Y > 0
+
+textLabel.TextTransparency = 1
+
+TweenService:Create(textLabel, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {TextTransparency = 0}):Play()
+
+local lastIndex = 0
+
+local startTime = tick()
+
+local typeDuration = math.random(1,3)
+
+local typeConn
+
+local funcFrameRef = nil
+
+local searchBoxRef = nil
+
+local ContentRef = nil
+
+local titleRef = nil
+
+local guiRef = nil
+
+local function getText(t)
+
+	if type(t) == "table" then
+
+		return t[currentLanguage] or t.en or next(t) and t[next(t)] or ""
+
+	end
+
+	return tostring(t or "")
+
+end
+
+local changeLanguage
+
+local functions = {
+
+{Text = {vn = "Trang Chủ", en = "Home"}, Scripts = {
+
+{Text = {vn = "God Mode", en = "God Mode"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/uJKCSGwX/raw", true))()
+
+]]},
+
+{Text = {vn = "Tàng Hình", en = "Invisible"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/h7O5XuRP/raw", true))()
+
+]]},
+
+{Text = {vn = "Bay", en = "Fly"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/zWpAwh67/raw", true))()
+
+]]},
+
+{Text = {vn = "Tốc Độ", en = "Speed"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/ZOi0QMH2/raw", true))()
+
+]]},
+
+{Text = {vn = "Nhảy Cao", en = "JumpPower"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/vDBZKpKI/raw", true))()
+
+]]},
+
+{Text = {vn = "Nhảy Vô Hạn", en = "Infinite Jump"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/R6y0zbne/raw", true))()
+
+]]},
+
+{Text = {vn = "Đi Trên Không", en = "Walking on Air"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/gSmFULAP/raw", true))()
+
+]]},
+
+{Text = {vn = "Tăng Tầm Xa Camera(Client)", en = "Increase Camera Range(Client)"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/k4m7Ik99/raw", true))()
+
+]]},
+
+{Text = {vn = "Xuyên Tường", en = "No clips"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/HY9KGtZv/raw", true))()
+
+]]},
+
+{Text = {vn = "Nhìn Trong Bóng Tối(Client)", en = "Night Vission(Client)"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/IRBK8iv1/raw", true))()
+
+]]},
+
+{Text = {vn = "Tốc Biến", en = "Flash"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/oYm4J8gK/raw", true))()
+
+]]},
+
+{Text = {vn = "Tua Ngược", en = "Reverse"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/7Lu7Ugeg/raw", true))()
+
+]]},
+
+{Text = {vn = "Nhân Đôi Tool(Client)", en = "Dupe Tool(Client)"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/7F6Wk5qV/raw", true))()
+
+]]},
+
+}},
+
+{Text = {vn = "Bầu Trời", en = "Sky"}, Scripts = {
+
+{Text = {vn = "Tím(Client)", en = "Purple(Client)"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/XnZVP6W1/raw", true))()
+
+]]},
+
+{Text = {vn = "Hồng(Client)", en = "Pink(Client)"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/8BwXGR5v/raw", true))()
+
+]]},
+
+{Text = {vn = "Đỏ(Client)", en = "Red(Client)"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/1iRzA0hr/raw", true))()
+
+]]},
+
+{Text = {vn = "Cam(Client)", en = "Orange(Client)"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/cefncB0x/raw", true))()
+
+]]},
+
+{Text = {vn = "Trắng(Client)", en = "White(Client)"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/s0StO4bS/raw", true))()
+
+]]},
+
+{Text = {vn = "Vàng(Client)", en = "Yellow(Client)"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/mv4o8DId/raw", true))()
+
+]]},
+
+{Text = {vn = "Xanh Dương(Client)", en = "Blue(Client)"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/elWZWTGL/raw", true))()
+
+]]},
+
+{Text = {vn = "Xanh Lá(Client)", en = "Green(Client)"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/g3uAuzEH/raw", true))()
+
+]]},
+
+{Text = {vn = "666(Client)", en = "666(Client)"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/kFtSMsc1/raw", true))()
+
+]]},
+
+}},
+
+{Text = {vn = "Người Chơi", en = "Player"}, Scripts = {
+
+{Text = {vn = "Amibot Người Chơi", en = "Amibot Player"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/Hugq6ZK3/raw", true))()
+
+]]},
+
+{Text = {vn = "HitBox Người Chơi", en = "HitBox Player"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/ocimV5GE/raw", true))()
+
+]]},
+
+{Text = {vn = "Theo Dõi Người Chơi", en = "Track Player"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/f4vyHRoJ/raw", true))()
+
+]]},
+
+{Text = {vn = "Dịch Chuyển Đến Người Chơi", en = "Teleport To Player"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/3VZBJb8g/raw", true))()
+
+]]},
+
+{Text = {vn = "Dịch Chuyển Đến Người Chơi Gần Nhất", en = "Teleport To Nearest Player"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/NWN9UOkl/raw", true))()
+
+]]},
+
+{Text = {vn = "Định Vị Người Chơi(Client)", en = "ESP Player(Client)"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/FQptEskO/raw", true))()
+
+]]},
+
+{Text = {vn = "Né Người Chơi", en = "Avoid Player"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/1J0uL7d0/raw", true))()
+
+]]},
+{Text = {vn = "Sao Chép Avatar(Client)", en = "Copy Avatar(Client)"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/gCgBJTyV/raw", true))()
+
+]]},
+}},
+
+{Text = {vn = "Thế Giới", en = "World"}, Scripts = {
+
+{Text = {vn = "X-ray(Client)", en = "X-ray(Client)"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/CuXfW9Zc/raw", true))()
+
+]]},
+
+{Text = {vn = "Xoá Sương Mù(Client)", en = "Remove Fog(Client)"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/5y2Hrxbb/raw", true))()
+
+]]},
+
+{Text = {vn = "Định Vị NPC(Client)", en = "ESP NPC(Client)"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/yKsUJIvv/raw", true))()
+
+]]},
+
+{Text = {vn = "Tương Tác Nhanh", en = "Fast Interaction"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/vFXvz6aw/raw", true))()
+
+]]},
+
+{Text = {vn = "Kéo Về", en = "Pull Back"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/InDd5uta/raw", true))()
+
+]]},
+
+{Text = {vn = "Disco Tacos(Client)", en = "Disco Tacos(Client)"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/acCroHLA/raw", true))()
+
+]]},
+
+{Text = {vn = "Quan Sát Thế Giới", en = "World View"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/j8OVhZpN/raw", true))()
+
+]]},
+
+{Text = {vn = "Ring", en = "Ring"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/hqSmaXtr/raw", true))()
+
+]]},
+
+{Text = {vn = "Toạ Độ Thế Giới(Client)", en = "World Coordinates(Client)"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/qy4nUFoK/raw", true))()
+
+]]},
+
+{Text = {vn = "Dịch Chuyển Đến Toạ Độ", en = "Move to Coordinates"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/5bDzOtiE/raw", true))()
+
+]]},
+{Text = {vn = "Hồi Sinh Tại Chỗ Chết", en = "Resurrecting the Dead"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/Qbb0TEVI/raw", true))()
+
+]]},
+}},
+
+{Text = {vn = "Giải Trí", en = "Fun"}, Scripts = {
+
+{Text = {vn = "Đá Bay", en = "Fling"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/87QNDwig/raw", true))()
+
+]]},
+
+{Text = {vn = "Fake Lag", en = "Fake Lag"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/JXnU96K5/raw", true))()
+
+]]},
+
+{Text = {vn = "Fake Lag 2", en = "Fake Lag 2"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/m73Yjanc/raw", true))()
+
+]]},
+
+{Text = {vn = "Xoay Khi Di Chuyển", en = "Spin While Moving"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/izwLjsu2/raw", true))()
+
+]]},
+
+{Text = {vn = "Animation Siêu Tốc", en = "Ultra Fast Animation"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/3sLq9M1g/raw", true))()
+
+]]},
+
+{Text = {vn = "Di Chuyển Xoay Ngang 360⁰", en = "360 Horizontal Spin Move"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/8YUySEP5/raw", true))()
+
+]]},
+
+{Text = {vn = "Trọng Lực Tự Do", en = "Free Gravity"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/y3u4VrS7/raw", true))()
+
+]]},
+{Text = {vn = "Chuyển Động Đầu(Client)", en = "Head Movement(Client)"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/TW2OGsbZ/raw", true))()
+
+]]},
+}},
+
+{Text = {vn = "Máy Chủ", en = "Sever"}, Scripts = {
+
+{Text = {vn = "Chuyển Server Khác", en = "Change Server"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/giIlLJBW/raw", true))()
+
+]]},
+
+{Text = {vn = "Tham Gia Lại Máy Chủ", en = "Rejoin Server"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/690rsBhv/raw", true))()
+
+]]},
+
+{Text = {vn = "Tìm Máy Chủ Ít Người", en = "Find Low Player Server"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/8QWvGbFR/raw", true))()
+
+]]},
+{Text = {vn = "Tìm Máy Chủ Gần Đầy", en = "Find Nearest Servers"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/VKVEaOrI/raw", true))()
+
+]]},
+{Text = {vn = "Chọn Chức Năng Phù Hợp", en = "Choose the Right Script"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/S9e27Unv/raw", true))()
+
+]]},
+
+}},
+
+{Text = {vn = "Khác", en = "Other"}, Scripts = {
+
+{Text = {vn = "Chỉnh Sửa(Client)", en = "Edit (Client)"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/8MWkYZoB/raw", true))()
+
+]]},
+
+ 
+
+{Text = {vn = "Obfucastor Mã", en = "Obfucastor Code"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/Wp9i6c8R/raw", true))()
+
+]]},
+
+}},
+
+{Text = {vn = "Tổng Hợp", en = "Synthetic"}, Scripts = {
+
+{Text = {vn = "Infinite Yield", en = "Infinity Yield"}, Script = [[
+
+loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
+
+]]},
+
+{Text = {vn = "Fly Gui V3", en = "Fly Gui V3"}, Script = [[
+
+loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
+
+]]},
+
+{Text = {vn = "Animation FE(R15)", en = "Animation FE(R15)"}, Script = [[
+
+loadstring(game:HttpGet('https://raw.githubusercontent.com/RubyBoo4life/Scripts/main/animations.vis'))()
+
+]]},
+
+{Text = {vn = "1x1x1x1 Gui(Client)", en = "1x1x1x1 Gui(Client)"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/eGH5vt1X/raw", true))()
+
+]]},
+
+{Text = {vn = "Tàng Hình(VPN)", en = "Invisible (VPN)"}, Script = [[
+
+loadstring(game:HttpGet('https://pastebin.com/raw/3Rnd9rHf'))()
+
+]]},
+
+ 
+
+{Text = {vn = "Teleport/save v2", en = "Teleport/save v2"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/FrLbNXms/raw"))()
+
+]]},
+
+ 
+
+{Text = {vn = "HoangHub", en = "HoangHub"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/sxRrdCPG/raw", true))()
+
+]]},
+
+{Text = {vn = "TÉO HUB", en = "TÉO HUB"}, Script = [[
+
+loadstring(game:HttpGet("https://raw.githubusercontent.com/teoscrvn/T-ng-h-p-/refs/heads/main/teovip.txt"))()
+
+                                                    
+
+]]},
+
+{Text = {vn = "TuzzHubV2", en = "TuzzHubV2"}, Script = [[
+
+loadstring(game:HttpGet("https://files.catbox.moe/k16g9k.txt"))()
+
+                                              
+
+]]},
+
+{Text = {vn = "ANONIX HUB", en = "ANONIX HUB"}, Script = [[
+
+loadstring(game:HttpGet("https://raw.githubusercontent.com/anonixhub/anonixhub/refs/heads/main/anonixhub"))()
+
+                                                          
+
+]]},
+
+{Text = {vn = "M TRIET HUB", en = "M TRIET HUB"}, Script = [[
+
+loadstring(game:HttpGet("https://pastefy.app/iP4yDJV6/raw", true))()                                                          
+
+]]},
+
+}},
+
+{Text = {vn = "Ngôn Ngữ", en = "Language"}, Scripts = {
+
+{Text = {vn = "Tiếng Việt", en = "Vietnamese"}, Script = [[
+
+_G.changeLanguage("vn")
+
+]]},
+
+{ Text = {vn = "Tiếng Anh", en = "English"}, Script = [[
+
+_G.changeLanguage("en")
+
+]]},
+
+}},
+
+}
+
+local allScripts = {}
+
+local function regenerateAllScripts()
+
+	allScripts = {}
+
+	for _, f in ipairs(functions) do
+
+		for _, s in ipairs(f.Scripts) do
+
+			table.insert(allScripts, {Text = s.Text, Script = s.Script, ParentFunc = f.Text})
+
+		end
+
+	end
+
+end
+
+regenerateAllScripts()
+
+local function runScriptEntry(entry)
+
+	if type(entry) == "function" then
+
+		pcall(entry)
+
+		return
+
+	end
+
+	if type(entry) == "string" then
+
+		if loadstring then
+
+			local chunk = loadstring(entry)
+
+			if chunk then
+
+				local ok, ret = pcall(chunk)
+
+				if ok and type(ret) == "function" then
+
+					pcall(ret)
+
+				end
+
+				return
+
+			end
+
+			local wrapper = loadstring("return function()\n" .. entry .. "\nend")
+
+			if wrapper then
+
+				local ok2, f = pcall(wrapper)
+
+				if ok2 and type(f) == "function" then
+
+					pcall(f)
+
+					return
+
+				end
+
+			end
+
+		end
+
+		return
+
+	end
+
+end
+
+local createButtons, buildFuncButtons
+
+createButtons = function(scripts)
+
+	if not ContentRef then return end
+
+	for _, child in ipairs(ContentRef:GetChildren()) do
+
+		if child:IsA("TextButton") or child:IsA("UIStroke") or child:IsA("UICorner") then child:Destroy() end
+
+	end
+
+	local xOffset, yOffset = 0, 0
+
+	local contentWidth = ContentRef.AbsoluteSize.X
+
+	local paddingX, paddingY, spacingX, spacingY = 8, 4, 6, 6
+
+	for _, v in ipairs(scripts) do
+
+		local labelText = getText(v.Text)
+
+		local textSize = TextService:GetTextSize(labelText, 18, Enum.Font.GothamBold, Vector2.new(math.huge, math.huge))
+
+		local btnW = textSize.X + paddingX * 3
+
+		local btnH = textSize.Y + paddingY * 2
+
+		if xOffset + btnW > contentWidth then
+
+			xOffset = 0
+
+			yOffset = yOffset + btnH + spacingY
+
+		end
+
+		local btn = Instance.new("TextButton")
+
+		btn.Size = UDim2.new(0, btnW, 0, btnH)
+
+		btn.Position = UDim2.new(0, xOffset, 0, yOffset)
+
+		btn.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+
+		btn.BorderSizePixel = 0
+
+		btn.Font = Enum.Font.GothamBold
+
+		btn.TextScaled = true
+
+		btn.Text = labelText
+
+		btn.TextColor3 = Color3.fromRGB(220, 255, 250)
+
+		btn.Parent = ContentRef
+
+		Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+
+		local stroke = Instance.new("UIStroke", btn)
+
+		stroke.Thickness = 2
+
+		stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+		task.spawn(function()
+
+			local h = 0
+
+			while btn.Parent do
+
+				h = (h + 0.005) % 1
+
+				stroke.Color = Color3.fromHSV(h, 1, 1)
+
+				task.wait(0.02)
+
+			end
+
+		end)
+
+		btn.Activated:Connect(functio
