@@ -10,7 +10,7 @@ local StarterGui = game:GetService("StarterGui")
 -- =========================
 local AllowedUsers = {
     ["HTGMx_tuber97ne"] = true,
-    ["NLE_LUKAKU"] = true
+    ["tuna90tuna"] = true
 }
 
 -- Kiểm tra quyền sử dụng
